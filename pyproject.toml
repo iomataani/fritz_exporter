@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "fritz-exporter"
-version = "2.3.1"
+version = "2.5.1"
 description = "Prometheus exporter for AVM Fritz! Devices"
 authors = ["Patrick Dreker <patrick@dreker.de>"]
 license = "Apache 2.0"
@@ -25,7 +25,7 @@ prometheus-client = ">=0.6.0"
 fritzconnection = ">=1.0.0"
 pyyaml = "*"
 requests = "*"
-attrs = ">=22.2,<24.0"
+attrs = ">=22.2,<25.0"
 defusedxml = "^0.7.1"
 
 [tool.poetry.group.dev.dependencies]
@@ -33,10 +33,10 @@ pytest = "*"
 pytest-mock = "*"
 types-pyyaml = "*"
 types-requests = "*"
-mypy = ">=0.971,<1.8"
+mypy = ">=0.971,<1.12"
 coverage = ">=6.4.4,<8.0.0"
-pytest-cov = ">=3,<5"
-ruff = ">=0.1.7,<0.3.0"
+pytest-cov = ">=3,<6"
+ruff = ">=0.1.7,<0.8.0"
 
 [tool.poetry.scripts]
 fritzexporter = "fritzexporter.__main__:main"
@@ -125,3 +125,11 @@ exclude = [
     '^tests/',
     '^docs/',
 ]
+
+[[tool.mypy.overrides]]
+module = "fritzconnection.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "defusedxml.*"
+ignore_missing_imports = true

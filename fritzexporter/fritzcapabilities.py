@@ -3,12 +3,14 @@ from __future__ import annotations
 import collections
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, ClassVar
 
 from fritzconnection.core.exceptions import (  # type: ignore[import]
     FritzActionError,
     FritzArgumentError,
     FritzArrayIndexError,
+    FritzConnectionException,
     FritzHttpInterfaceError,
     FritzInternalError,
     FritzServiceError,
@@ -24,7 +26,7 @@ logger = logging.getLogger("fritzexporter.fritzcapability")
 
 
 class FritzCapability(ABC):
-    capabilities: ClassVar[list[FritzCapability]] = []
+    capabilities: ClassVar[list[type[FritzCapability]]] = []
     subclasses: ClassVar[list[type[FritzCapability]]] = []
 
     def __init__(self) -> None:
@@ -63,6 +65,7 @@ class FritzCapability(ABC):
                     FritzActionError,
                     FritzInternalError,
                     FritzArgumentError,
+                    FritzConnectionException,
                 ) as e:
                     logger.warning(
                         "disabling metrics at service %s, action %s - fritzconnection.call_action "
@@ -161,7 +164,7 @@ class DeviceInfo(FritzCapability):
             info_result["NewUpTime"],
         )
 
-    def _get_metric_values(self) -> CounterMetricFamily:
+    def _get_metric_values(self) -> Generator[CounterMetricFamily | GaugeMetricFamily, None, None]:
         yield self.metrics["uptime"]
 
 
@@ -1194,8 +1197,8 @@ class HomeAutomation(FritzCapability):
             ],
         )
 
-    def _generate_metric_values(self, device: FritzDevice) -> None:
-        # There is no way to get a list or the number ofhome automation devices, so we just try
+    def _generate_metric_values(self, device: FritzDevice) -> None:  # noqa: C901
+        # There is no way to get a list or the number of home automation devices, so we just try
         # do a while loop until we get an error
         index = 0
 
@@ -1459,7 +1462,7 @@ class HomeAutomation(FritzCapability):
         yield self.metrics["battery_low"]
 
 
-# Copyright 2019-2023 Patrick Dreker <patrick@dreker.de>
+# Copyright 2019-2024 Patrick Dreker <patrick@dreker.de>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

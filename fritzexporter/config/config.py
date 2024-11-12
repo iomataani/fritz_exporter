@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 import logging
 import os
 from pathlib import Path
@@ -15,6 +16,7 @@ from .exceptions import (
     ConfigError,
     ConfigFileUnreadableError,
     EmptyConfigError,
+    FritzPasswordFileDoesNotExistError,
     FritzPasswordTooLongError,
     NoDevicesFoundError,
 )
@@ -26,6 +28,7 @@ def _read_config_file(config_file_path: str) -> dict:
     try:
         with Path(config_file_path).open() as config_file:
             config = yaml.safe_load(config_file)
+
     except OSError as e:
         logger.exception("Config file specified but could not be read.")
         raise ConfigFileUnreadableError from e
@@ -35,11 +38,20 @@ def _read_config_file(config_file_path: str) -> dict:
 
 
 def _read_config_from_env() -> dict:
-    if not all(required in os.environ for required in ["FRITZ_USERNAME", "FRITZ_PASSWORD"]):
-        logger.critical("Required env variables missing (FRITZ_USERNAME, FRITZ_PASSWORD)!")
-        msg = "Required env variables missing (FRITZ_USERNAME, FRITZ_PASSWORD)!"
+    if "FRITZ_USERNAME" not in os.environ or all(
+        required not in os.environ for required in ["FRITZ_PASSWORD", "FRITZ_PASSWORD_FILE"]
+    ):
+        logger.critical(
+            "Required env variables missing "
+            "(FRITZ_USERNAME, FRITZ_PASSWORD or FRITZ_PASSWORD_FILE)!"
+        )
+        msg = (
+            "Required env variables missing "
+            "(FRITZ_USERNAME, FRITZ_PASSWORD or FRITZ_PASSWORD_FILE)!"
+        )
         raise ConfigError(msg)
 
+    listen_address = os.getenv("FRITZ_LISTEN_ADDRESS")
     exporter_port = os.getenv("FRITZ_PORT")
     log_level = os.getenv("FRITZ_LOG_LEVEL")
 
@@ -47,6 +59,8 @@ def _read_config_from_env() -> dict:
     name: str = os.getenv("FRITZ_NAME", "Fritz!Box")
     username = os.getenv("FRITZ_USERNAME")
     password = os.getenv("FRITZ_PASSWORD")
+    password_file = os.getenv("FRITZ_PASSWORD_FILE")
+
     host_info: str = os.getenv("FRITZ_HOST_INFO", "False")
 
     config: dict[Any, Any] = {}
@@ -54,11 +68,14 @@ def _read_config_from_env() -> dict:
         config["exporter_port"] = exporter_port
     if log_level:
         config["log_level"] = log_level
+    if listen_address:
+        config["listen_address"] = listen_address
 
     config["devices"] = []
     device = {
         "username": username,
         "password": password,
+        "password_file": password_file,
         "host_info": host_info,
         "name": name,
     }
@@ -91,6 +108,9 @@ class ExporterConfig:
         default="INFO", validator=validators.in_(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
     )
     devices: list[DeviceConfig] = field(factory=list)
+    # TODO(pdreker): Don't bind to 0.0.0.0 by default
+    # https://github.com/pdreker/fritz_exporter/issues/402
+    listen_address: str = field(default="0.0.0.0")  # noqa: S104
 
     @devices.validator
     def check_devices(self, _: attrs.Attribute, value: list[DeviceConfig]) -> None:
@@ -101,6 +121,10 @@ class ExporterConfig:
         devicenames = [dev.name for dev in value]
         if len(devicenames) != len(set(devicenames)):
             logger.warning("Device names are not unique")
+
+    @listen_address.validator
+    def check_listen_address(self, _: attrs.Attribute, value: str) -> None:
+        _ = ipaddress.ip_address(value)
 
     @classmethod
     def from_config(cls, config: dict) -> ExporterConfig:
@@ -114,32 +138,48 @@ class ExporterConfig:
         devices: list[DeviceConfig] = [
             DeviceConfig.from_config(dev) for dev in config.get("devices", [])
         ]
+        # TODO(pdreker): Don't bind to 0.0.0.0 by default
+        # https://github.com/pdreker/fritz_exporter/issues/402
+        listen_address = config.get("listen_address", "0.0.0.0")  # noqa: S104
 
-        return cls(exporter_port=exporter_port, log_level=log_level, devices=devices)
+        return cls(
+            exporter_port=exporter_port,
+            log_level=log_level,
+            devices=devices,
+            listen_address=listen_address,
+        )
 
 
 @define
 class DeviceConfig:
     hostname: str = field(validator=validators.min_len(1), converter=lambda x: str.lower(x))
     username: str = field(validator=validators.min_len(1))
-    password: str = field(validator=validators.min_len(1))
+    password: str | None = field(default=None)
+    password_file: str | None = field(default=None)
     name: str = ""
     host_info: bool = field(default=False, converter=converters.to_bool)
 
     @password.validator
-    def check_password(self, _: attrs.Attribute, value: str) -> None:
-        if len(value) > FRITZ_MAX_PASSWORD_LENGTH:
+    def check_password(self, _: attrs.Attribute, value: str | None) -> None:
+        if value is not None and len(value) > FRITZ_MAX_PASSWORD_LENGTH:
             logger.exception(
                 "Password is longer than 32 characters! "
                 "Login may not succeed, please see documentation!"
             )
             raise FritzPasswordTooLongError
 
+    @password_file.validator
+    def check_password_file(self, _: attrs.Attribute, value: str | None) -> None:
+        if value is not None and not Path(value).is_file():
+            logger.exception("Password file does not exist!")
+            raise FritzPasswordFileDoesNotExistError
+
     @classmethod
     def from_config(cls, device: dict) -> DeviceConfig:
         hostname = device.get("hostname", "fritz.box")
         username = device.get("username", "")
-        password = device.get("password", "")
+        password = device.get("password")
+        password_file = device.get("password_file")
         name = device.get("name", "")
         host_info = device.get("host_info", False)
 
@@ -147,6 +187,7 @@ class DeviceConfig:
             hostname=hostname,
             username=username,
             password=password,
+            password_file=password_file,
             name=name,
             host_info=host_info,
         )

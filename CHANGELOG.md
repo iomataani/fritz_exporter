@@ -2,6 +2,57 @@
 
 
 
+## [2.5.1](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v2.5.0...fritzexporter-v2.5.1) (2024-11-11)
+
+
+### Bug Fixes
+
+* catch FritzConnectionException when checking capabilities ([191869d](https://github.com/pdreker/fritz_exporter/commit/191869d02080753206d29b57d5072caee2fcc2c4))
+
+## [2.5.0](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v2.4.3...fritzexporter-v2.5.0) (2024-03-13)
+
+
+### Features
+
+* make listen address configurable (by @NyCodeGHG in [#315](https://github.com/pdreker/fritz_exporter/issues/315)) ([#316](https://github.com/pdreker/fritz_exporter/issues/316)) ([abc1671](https://github.com/pdreker/fritz_exporter/commit/abc1671dd74d6d4e480ec5747e12b08b1ffd0609))
+
+## [2.4.3](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v2.4.2...fritzexporter-v2.4.3) (2024-03-10)
+
+
+### Bug Fixes
+
+* minor linting, make ARM builds work again ([#308](https://github.com/pdreker/fritz_exporter/issues/308)) ([1632029](https://github.com/pdreker/fritz_exporter/commit/16320292dc1ea5c1fba1f5d6dc4a5bb05467f579))
+
+## [2.4.2](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v2.4.1...fritzexporter-v2.4.2) (2024-03-10)
+
+
+### Documentation
+
+* update copyright notice years ([0d19d27](https://github.com/pdreker/fritz_exporter/commit/0d19d27e4fc868d234c30c368f1aa8cb350866fd))
+* Update Docker build instruction. ([65064f4](https://github.com/pdreker/fritz_exporter/commit/65064f47c446a88a1470f082393452b982af4234))
+
+## [2.4.1](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v2.4.0...fritzexporter-v2.4.1) (2024-03-10)
+
+
+### Bug Fixes
+
+* ignore exceptions from parsing XML of AHA devices ([#303](https://github.com/pdreker/fritz_exporter/issues/303)) ([02197fa](https://github.com/pdreker/fritz_exporter/commit/02197fab4bb74eff8488ae03b84008535735c883))
+
+## [2.4.0](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v2.3.1...fritzexporter-v2.4.0) (2024-03-09)
+
+
+### Features
+
+* add Homeautomation metrics via HTTP ([#273](https://github.com/pdreker/fritz_exporter/issues/273)) ([72f1361](https://github.com/pdreker/fritz_exporter/commit/72f136160943f4e9f3a9feec7c4d156af2b5e4cd))
+* allow reading password from a file ([#296](https://github.com/pdreker/fritz_exporter/issues/296)) ([369f007](https://github.com/pdreker/fritz_exporter/commit/369f007f0543dffb6170bd16557a06c554d824bd))
+
+
+### Bug Fixes
+
+* Add more flexibility to helper script. ([#280](https://github.com/pdreker/fritz_exporter/issues/280)) ([86697fa](https://github.com/pdreker/fritz_exporter/commit/86697fa075c980530c9c45c6822cab9d44579a2e))
+* **helm:** ServiceMonitor seems to like quotes now ([2e57ee9](https://github.com/pdreker/fritz_exporter/commit/2e57ee98d035cb27add47790852f29415d97b008))
+* small correction for AHA HTTP metrics ([6658b8a](https://github.com/pdreker/fritz_exporter/commit/6658b8ad55374e00741a6dbc15ae709d99d43c30))
+
 ## [2.3.1](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v2.3.0...fritzexporter-v2.3.1) (2023-12-16)
 
 

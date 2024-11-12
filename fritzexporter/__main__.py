@@ -3,6 +3,7 @@ import asyncio
 import logging
 import os
 import sys
+from pathlib import Path
 
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
@@ -63,7 +64,7 @@ def parse_cmdline() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
+def main() -> None:  # noqa: PLR0912
     fritzcollector = FritzCollector()
 
     args = parse_cmdline()
@@ -89,8 +90,14 @@ def main() -> None:
         log.setLevel(log_level)
 
     for dev in config.devices:
+        if dev.password_file is not None:
+            # read password from password file, strip to get rid of newlines
+            password = Path(dev.password_file).read_text().strip()
+            logger.info("Using password from password file %s", dev.password_file)
+        else:
+            password = dev.password if dev.password is not None else ""
         fritz_device = FritzDevice(
-            FritzCredentials(dev.hostname, dev.username, dev.password),
+            FritzCredentials(dev.hostname, dev.username, password),
             dev.name,
             host_info=dev.host_info,
         )
@@ -108,8 +115,8 @@ def main() -> None:
 
     REGISTRY.register(fritzcollector)
 
-    logger.info("Starting listener at %d", config.exporter_port)
-    start_http_server(int(config.exporter_port))
+    logger.info("Starting listener at %s:%d", config.listen_address, config.exporter_port)
+    start_http_server(int(config.exporter_port), str(config.listen_address))
 
     logger.info("Entering async main loop - exporter is ready")
     loop = asyncio.new_event_loop()
@@ -125,7 +132,7 @@ def main() -> None:
 if __name__ == "__main__":
     main()
 
-# Copyright 2019-2023 Patrick Dreker <patrick@dreker.de>
+# Copyright 2019-2024 Patrick Dreker <patrick@dreker.de>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
